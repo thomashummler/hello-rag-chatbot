@@ -37,7 +37,6 @@ for index, row in Rieker_Database.iterrows():
     docs.append(document)
 
 
-print(docs)
 
 #Gerade unklar ob preprocessor wirklich benutzt wird
 from haystack.nodes import PreProcessor
@@ -80,68 +79,33 @@ pipeline.add_node(component=dense_retriever, name="DenseRetriever", inputs=["Que
 pipeline.add_node(component=join_documents, name="JoinDocuments", inputs=["SparseRetriever", "DenseRetriever"])
 pipeline.add_node(component=rerank, name="ReRanker", inputs=["JoinDocuments"])
 
-#Ausprobieren der Pipeline
-from haystack.utils import print_answers
-
-prediction = pipeline.run(
-    query="Ich suche einen Schuh in der Farbe rot",
-    params={
-        "SparseRetriever": {"top_k": 10},
-        "DenseRetriever": {"top_k": 10},
-        "JoinDocuments": {"top_k_join": 15},  # comment for debug
-        # "JoinDocuments": {"top_k_join": 15, "debug":True}, #uncomment for debug
-        "ReRanker": {"top_k": 5},
-    },
-)
-
-documents = prediction['documents'] 
-# Gegebene Liste von Dokumenten
-
-# Schleife durch alle Dokumente
-for document in documents:
-    # Zugriff auf die relevanten Informationen
-  print(document)
 
 client = OpenAI(
     api_key= openai_api_key
 )
 
-chatVerlauf_UserInteraction=[{
-        "role": "system",
-           "content": f"You are a polite, courteous and helpful assistant who should help the user find the right shoes.." 
-                      f"You are getting passed a list of {documents} which contain Documents of retrieved shoes mit by a Hybrid Retrieval RAG Pipeline from Haystack."
-                      f"After every User Input the RAG Pipeline is getting started again ist retrieving to you a new List of new Documents"
-                      f"You should check if the Informations in the documents match with the Informations that the User gave to you in the query and describe the shoes in a continuous text and not in embroidery dots for those Documents, who contain details about a shoe, who fit to the User Query "
-                      f"Also request more Informations so that a better product advisory can be done and a better Retrieval process can be initiated."
-                      f"Do not assume a specific gender when its not given in the Text"
-      }]
+
 
 if 'chatVerlauf_UserInteraction' not in st.session_state:
         st.chatVerlauf_UserInteraction = []
-        st.chatVerlauf_UserInteraction=[{
-        "role": "system",
-           "content": f"You are a polite, courteous and helpful assistant who should help the user find the right shoes.." 
-                      f"You are getting passed a list of {documents} which contain Documents of retrieved shoes mit by a Hybrid Retrieval RAG Pipeline from Haystack."
-                      f"After every User Input the RAG Pipeline is getting started again ist retrieving to you a new List of new Documents"
-                      f"You should check if the Informations in the documents match with the Informations that the User gave to you in the query and describe the shoes in a continuous text and not in embroidery dots for those Documents, who contain details about a shoe, who fit to the User Query "
-                      f"Also request more Informations so that a better product advisory can be done and a better Retrieval process can be initiated."
-                      f"Do not assume a specific gender when its not given in the Text"
-            }]    
 
-if 'st.text_for_RAG' not in st.session_state:
-    st.text_for_RAG = ""
+if 'text_for_RAG' not in st.session_state:
+    st.session_state.text_for_RAG = ""
 
 st.title("Chatbot 2")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+if 'chatVerlauf_UserInteraction' not in st.session_state:
+        st.chatVerlauf_UserInteraction = []
 
-if prompt := st.chat_input("What is up?"):
+if prompt := st.chat_input("Hallo, wie kann ich dir weiterhelfen?"):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
     
@@ -154,11 +118,9 @@ if prompt := st.chat_input("What is up?"):
         message_placeholder = st.empty()
 
     user_input = prompt
-    st.text_for_RAG = st.text_for_RAG + user_input
-    print(st.text_for_RAG)
-    
+    st.session_state.text_for_RAG = st.session_state.text_for_RAG + " " + prompt
     prediction = pipeline.run(
-        query=st.text_for_RAG,
+        query= st.session_state.text_for_RAG,
         params={
             "SparseRetriever": {"top_k": 10},
             "DenseRetriever": {"top_k": 10},
@@ -168,15 +130,34 @@ if prompt := st.chat_input("What is up?"):
         }
     )
     documents = prediction['documents']
-    st.chatVerlauf_UserInteraction.append({"role": "user", "content": user_input})
-    
+
+    if 'chatVerlauf_UserInteraction' not in st.session_state:
+        st.session_state.chatVerlauf_UserInteraction = []
+        st.session_state.chatVerlauf_UserInteraction.append({
+        "role": "system",
+           "content": f"You are a polite, courteous and helpful assistant who should help the user find the right shoes.." 
+                      f"You are getting passed a list of {documents} which contain Documents of retrieved shoes mit by a Hybrid Retrieval RAG Pipeline from Haystack."
+                      f"After every User Input the RAG Pipeline is getting started again ist retrieving to you a new List of new Documents"
+                      f"You should check if the Informations in the documents match with the Informations that the User gave to you in the query and describe the shoes in a continuous text and not in embroidery dots for those Documents, who contain details about a shoe, who fit to the User Query "
+                      f"Also request more Informations so that a better product advisory can be done and a better Retrieval process can be initiated."
+                      f"Do not assume a specific gender when its not given in the Text"
+         }) 
+        
+    st.session_state.chatVerlauf_UserInteraction.append({"role": "user", "content": user_input})
     chat_User = client.chat.completions.create(
         model="gpt-4-1106-preview",
-        messages=st.chatVerlauf_UserInteraction
+        messages= st.session_state.chatVerlauf_UserInteraction
     )
-    
     antwort_Message = chat_User.choices[0].message.content
-    print(antwort_Message)
+    st.session_state.chatVerlauf_UserInteraction.append({"role": "assistant", "content": antwort_Message})
+    with st.chat_message("assistant"):
+        message_placeholder = st.empty()
+        message_placeholder.markdown(antwort_Message)
+    print( st.session_state.chatVerlauf_UserInteraction)
+    # Add assistant response to chat history
+    st.session_state.messages.append({"role": "assistant", "content": antwort_Message})
+
+
 
 
 
