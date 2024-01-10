@@ -3,9 +3,8 @@ numpy
 pandas
 pydeck
 streamlit
-openai == 1.6.1
-openpyxl == 3.1.2
-farm-haystack 
+openai==1.6.1
+openpyxl==3.1.2
 farm-haystack[inference]
-torch == 2.1.2
-transformers == 4.35.2
+torch==1.10.0  # Update this based on your environment and compatibility
+transformers==4.35.2
