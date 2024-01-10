@@ -5,7 +5,7 @@ from haystack.pipelines import Pipeline
 from haystack.nodes import PreProcessor
 import pandas as pd
 import numpy as np
-from openai import OpenAI
+import openai 
 import os
 import streamlit as st
 
