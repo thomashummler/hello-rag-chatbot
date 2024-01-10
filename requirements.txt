@@ -9,7 +9,7 @@ openai==1.6.1
 openpyxl==3.1.2
 farm-haystack
 nltk
-farm-haystack[preprocessing
+farm-haystack[preprocessing]
 farm-haystack[inference]
 torch
 transformers
