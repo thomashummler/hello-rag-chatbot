@@ -5,6 +5,6 @@ pydeck
 streamlit
 openai == 1.6.1
 openpyxl == 3.1.2
-farm-haystack
+farm-haystack == 1.23.0
 farm-haystack[interference]
 torch
