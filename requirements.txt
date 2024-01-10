@@ -6,3 +6,5 @@ streamlit
 openai == 1.6.1
 openpyxl == 3.1.2
 farm-haystack
+farm-haystack[interference]
+torch
