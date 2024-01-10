@@ -9,7 +9,7 @@ from openai import OpenAI
 import os
 import streamlit as st
 
-openai_api_key = os.environ["API_KEY"]
+openai.api_key = os.environ["API_KEY"]
 file_path = 'Rieker_SUMMERANDWINTER_DATA.xlsx'
 
 Rieker_Database = pd.read_excel(file_path)
@@ -80,9 +80,7 @@ pipeline.add_node(component=join_documents, name="JoinDocuments", inputs=["Spars
 pipeline.add_node(component=rerank, name="ReRanker", inputs=["JoinDocuments"])
 
 
-client = OpenAI(
-    api_key= openai_api_key
-)
+
 
 
 
@@ -144,9 +142,9 @@ if prompt := st.chat_input("Hallo, wie kann ich dir weiterhelfen?"):
          }) 
         
     st.session_state.chatVerlauf_UserInteraction.append({"role": "user", "content": user_input})
-    chat_User = client.chat.completions.create(
-        model="gpt-4-1106-preview",
-        messages= st.session_state.chatVerlauf_UserInteraction
+    chat_User = openai.ChatCompletion.create(
+    model="gpt-4-1106-preview",
+    messages=st.session_state.chatVerlauf_UserInteraction
     )
     antwort_Message = chat_User.choices[0].message.content
     st.session_state.chatVerlauf_UserInteraction.append({"role": "assistant", "content": antwort_Message})
